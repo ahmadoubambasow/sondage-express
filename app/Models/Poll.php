@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory as FactoriesHasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\View\View;
 
 class Poll extends Model
 {
@@ -38,4 +39,5 @@ class Poll extends Model
     {
         return $this->hasMany(Vote::class);
     }
+
 }
