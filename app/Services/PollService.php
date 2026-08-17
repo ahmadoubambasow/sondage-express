@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Exceptions\PollClosureException;
+use App\Exceptions\PollModificationException;
 use App\Models\Poll;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -33,6 +35,8 @@ class PollService
 
     public function update(Poll $poll, array $data): Poll
     {
+        $this->ensureCanBeModified($poll);
+
         return DB::transaction(function () use ($poll, $data) {
 
             $poll->update([
@@ -54,8 +58,17 @@ class PollService
         });
     }
 
+    public function canBeModified(Poll $poll): bool
+    {
+        return $poll->status !== 'closed' 
+            && !($poll->expires_at || $poll->expires_at->isPast())
+            && !$poll->votes()->exists();
+    }
+
     public function delete(Poll $poll): void
     {
+        $this->ensureCanBeModified($poll);
+
         DB::transaction(function () use ($poll) {
             $poll->options()->delete();
             $poll->delete();
@@ -74,5 +87,50 @@ class PollService
         }
 
         return $slug;
+    }
+
+    private function ensureCanBeModified(Poll $poll): void
+    {
+        if ($poll->status === 'closed') {
+            throw new PollModificationException(
+                'Ce sondage est fermé et ne peut plus être modifié.'
+            );
+        }
+
+        if ($poll->expires_at && $poll->expires_at->isPast()) {
+            throw new PollModificationException(
+                'Ce sondage a expiré et ne peut plus être modifié.'
+            );
+        }
+
+        if ($poll->votes()->exists()) {
+            throw new PollModificationException(
+                'Ce sondage a déjà reçu des votes et ne peut plus être modifie.'
+            );
+        }
+    }
+
+    public function close(Poll $poll): Poll
+    {
+        if ($poll->status === 'closed') {
+            throw new PollModificationException(
+                'Ce sondage est fermé déjà fermé.'
+            );
+        }
+
+        if (
+            $poll->expires_at &&
+            $poll->expires_at->isPast()
+        ) {
+            throw new PollClosureException(
+                'Ce sondage a déjà expiré.'
+            );
+        }
+
+        $poll->update([
+            'status' => 'closed',
+        ]);
+
+        return $poll->fresh();
     }
 }

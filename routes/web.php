@@ -32,6 +32,15 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/polls', [PollController::class, 'store'])
         ->name('polls.store');
+    
+    Route::post('/polls/{poll:slug}/vote', [PollController::class, 'vote'])
+        ->name('polls.vote');
+
+    Route::get('/polls/{poll:slug}/results', [PollController::class, 'results'])
+        ->name('polls.results');
+    
+    Route::patch('/polls/{poll:slug}/close', [PollController::class, 'close'])
+        ->name('polls.close');
 
     Route::get('/profile', [ProfileController::class, 'edit'])
         ->name('profile.edit');
