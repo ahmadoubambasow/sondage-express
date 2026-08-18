@@ -52,7 +52,7 @@ class PollController extends Controller
         $isOwner = $poll->user_id === auth()->id();
 
         $isOpen = $poll->status === 'active'
-            && !($poll->expires_at && $poll->expires_at->isPast());
+            && (!$poll->expires_at || $poll->expires_at->isFuture());
 
         return view('polls.show', [
             'poll' => $poll,

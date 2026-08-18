@@ -10,13 +10,14 @@
 
         <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
 
-            {{-- Messages --}}
+            {{-- Messages de succès --}}
             @if (session('success'))
                 <div class="mb-6 p-4 bg-green-100 text-green-800 rounded-lg">
                     {{ session('success') }}
                 </div>
             @endif
 
+            {{-- Messages d'erreur --}}
             @if (session('error'))
                 <div class="mb-6 p-4 bg-red-100 text-red-800 rounded-lg">
                     {{ session('error') }}
@@ -34,23 +35,28 @@
                 </div>
             @endif
 
+
+            {{-- Carte du sondage --}}
             <div class="bg-white shadow-sm sm:rounded-lg">
 
                 <div class="p-6">
 
-                    {{-- Titre --}}
+                    {{-- ================================================= --}}
+                    {{-- INFORMATIONS DU SONDAGE                           --}}
+                    {{-- ================================================= --}}
+
                     <h1 class="text-2xl font-bold text-gray-900">
                         {{ $poll->title }}
                     </h1>
 
-                    {{-- Description --}}
                     @if ($poll->description)
                         <p class="mt-3 text-gray-600">
                             {{ $poll->description }}
                         </p>
                     @endif
 
-                    {{-- Informations du sondage --}}
+
+                    {{-- Informations --}}
                     <div class="mt-4 flex flex-wrap gap-4 text-sm text-gray-500">
 
                         <span>
@@ -78,16 +84,16 @@
 
                     </div>
 
-                    {{-- Section vote --}}
+
+                    {{-- ================================================= --}}
+                    {{-- VOTE                                               --}}
+                    {{-- ================================================= --}}
+
                     <div class="mt-8">
 
-                        @if (
-                            $poll->status === 'active'
-                            && !($poll->expires_at && $poll->expires_at->isPast())
-                            && !$hasVoted
-                        )
+                        {{-- Sondage ouvert + utilisateur n'ayant pas voté --}}
+                        @if ($isOpen && !$hasVoted)
 
-                            {{-- Formulaire de vote --}}
                             <h2 class="font-semibold text-gray-900 mb-4">
                                 Choisissez une option
                             </h2>
@@ -131,18 +137,20 @@
                                     </p>
                                 @enderror
 
+
+                                {{-- Actions du vote --}}
                                 <div class="mt-6 flex flex-wrap gap-3">
 
                                     <button
                                         type="submit"
-                                        class="px-5 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700"
+                                        class="inline-flex items-center px-5 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700"
                                     >
                                         Voter
                                     </button>
 
                                     <a
                                         href="{{ route('polls.results', $poll) }}"
-                                        class="px-5 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+                                        class="inline-flex items-center px-5 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
                                     >
                                         Voir les résultats
                                     </a>
@@ -151,23 +159,25 @@
 
                             </form>
 
+
+                        {{-- Utilisateur ayant déjà voté --}}
                         @elseif ($hasVoted)
 
-                            {{-- Utilisateur ayant déjà voté --}}
                             <div class="p-4 bg-green-100 text-green-800 rounded-lg">
                                 Vous avez déjà voté pour ce sondage.
                             </div>
 
                             <a
                                 href="{{ route('polls.results', $poll) }}"
-                                class="mt-4 inline-block px-5 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700"
+                                class="mt-4 inline-flex items-center px-5 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700"
                             >
                                 Voir les résultats
                             </a>
 
+
+                        {{-- Sondage fermé ou expiré --}}
                         @else
 
-                            {{-- Sondage fermé ou expiré --}}
                             <div class="p-4 bg-gray-100 text-gray-600 rounded-lg">
 
                                 @if ($poll->status === 'closed')
@@ -188,7 +198,7 @@
 
                             <a
                                 href="{{ route('polls.results', $poll) }}"
-                                class="mt-4 inline-block px-5 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700"
+                                class="mt-4 inline-flex items-center px-5 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700"
                             >
                                 Voir les résultats
                             </a>
@@ -197,65 +207,115 @@
 
                     </div>
 
-                    
-                    {{-- Actions du propriétaire --}}
-                    @if (
-                        $poll->user_id === auth()->id()
-                        && $poll->status === 'active'
-                        && !($poll->expires_at && $poll->expires_at->isPast())
-                    )
 
-                        <div class="mt-8 pt-6 border-t flex flex-wrap gap-3">
+                    {{-- ================================================= --}}
+                    {{-- ACTIONS DU PROPRIÉTAIRE                           --}}
+                    {{-- ================================================= --}}
 
-                            {{-- Modifier uniquement si aucun vote --}}
-                            
-                            @if (!$poll->votes()->exists())
-                                <a
-                                    href="{{ route('polls.edit', $poll) }}"
-                                    class="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700"
-                                >
-                                    Modifier
-                                </a>
-                            @endif
+                    @if ($isOwner && $isOpen)
 
-                            {{-- Fermer le sondage --}}
-                            <form
-                                method="POST"
-                                action="{{ route('polls.close', $poll) }}"
-                                onsubmit="return confirm('Voulez-vous vraiment fermer ce sondage ?')"
-                            >
-                                @csrf
-                                @method('PATCH')
+                        <div
+                            class="mt-8 pt-6 border-t"
+                        >
 
-                                <button
-                                    type="submit"
-                                    class="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700"
-                                >
-                                    Fermer le sondage
-                                </button>
-                            </form>
+                            <h3 class="mb-4 font-semibold text-gray-900">
+                                Actions du propriétaire
+                            </h3>
 
-                            {{-- Supprimer uniquement si aucun vote --}}
-                            
-                            @if (!$poll->votes()->exists())
-                                <form
-                                        method="POST"
-                                        action="{{ route('polls.destroy', $poll) }}"
-                                        onsubmit="return confirm('Voulez-vous vraiment supprimer ce sondage ?')"
+                            <div class="flex flex-wrap items-center gap-3">
+
+
+                                {{-- Modifier --}}
+                                @if (!$hasVotes)
+
+                                    <a
+                                        href="{{ route('polls.edit', $poll) }}"
+                                        style="
+                                            display: inline-block;
+                                            background-color: #1f2937;
+                                            color: white;
+                                            padding: 8px 16px;
+                                            border-radius: 6px;
+                                            text-decoration: none;
+                                        "
                                     >
+                                        Modifier
+                                    </a>
+
+                                @endif
+
+
+                                {{-- ================================================= --}}
+                                {{-- FERMER LE SONDAGE                                --}}
+                                {{-- ================================================= --}}
+
+                                <form
+                                    method="POST"
+                                    action="{{ route('polls.close', $poll) }}"
+                                    style="display: inline-block; margin: 0;"
+                                    onsubmit="return confirm('Voulez-vous vraiment fermer ce sondage ?')"
+                                >
 
                                     @csrf
-                                    @method('DELETE')
+                                    @method('PATCH')
 
                                     <button
                                         type="submit"
-                                        class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                                        style="
+                                            display: inline-block;
+                                            background-color: #d97706;
+                                            color: white;
+                                            padding: 8px 16px;
+                                            border: none;
+                                            border-radius: 6px;
+                                            cursor: pointer;
+                                            font-size: 14px;
+                                        "
                                     >
-                                        Supprimer
+                                        Fermer le sondage
                                     </button>
 
                                 </form>
-                            @endif
+
+
+                                {{-- ================================================= --}}
+                                {{-- SUPPRIMER                                       --}}
+                                {{-- ================================================= --}}
+
+                                @if (!$hasVotes)
+
+                                    <form
+                                        method="POST"
+                                        action="{{ route('polls.destroy', $poll) }}"
+                                        style="display: inline-block; margin: 0;"
+                                        onsubmit="return confirm('Voulez-vous vraiment supprimer ce sondage ?')"
+                                    >
+
+                                        @csrf
+                                        @method('DELETE')
+
+                                        <button
+                                            type="submit"
+                                            style="
+                                                display: inline-block;
+                                                background-color: #dc2626;
+                                                color: white;
+                                                padding: 8px 16px;
+                                                border: none;
+                                                border-radius: 6px;
+                                                cursor: pointer;
+                                                font-size: 14px;
+                                            "
+                                        >
+                                            Supprimer
+                                        </button>
+
+                                    </form>
+
+                                @endif
+
+                            </div>
+
                         </div>
 
                     @endif

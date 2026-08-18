@@ -61,7 +61,7 @@ class PollService
     public function canBeModified(Poll $poll): bool
     {
         return $poll->status !== 'closed' 
-            && !($poll->expires_at || $poll->expires_at->isPast())
+            && !($poll->expires_at || $poll->expires_at->isFuture())
             && !$poll->votes()->exists();
     }
 
