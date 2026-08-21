@@ -9,38 +9,80 @@ use RuntimeException;
 
 class VoteService
 {
-    public function vote(User $user, Poll $poll, int $pollOptionId): void {
-        DB::transaction(function () use ($user, $poll, $pollOptionId) {   
-        
+    /**
+     * Enregistre un vote.
+     *
+     * Le vote peut provenir :
+     * - d'un utilisateur connecté ;
+     * - d'un visiteur identifié par un voter_token.
+     */
+    public function vote(
+        ?User $user,
+        Poll $poll,
+        int $pollOptionId,
+        string $voterToken
+    ): void {
+        DB::transaction(function () use (
+            $user,
+            $poll,
+            $pollOptionId,
+            $voterToken
+        ) {
+
             $this->ensurePollCanReceiveVote($poll);
 
-            $this->ensureOptionBelongsToPoll($poll, $pollOptionId);
+            $this->ensureOptionBelongsToPoll(
+                $poll,
+                $pollOptionId
+            );
 
-            $this->ensureUserHasNotVoted($user, $poll);
+            $this->ensureVoterHasNotVoted(
+                $user,
+                $poll,
+                $voterToken
+            );
 
             $poll->votes()->create([
                 'poll_option_id' => $pollOptionId,
-                'user_id' => $user->id,
-                'voter_token' => null,
+
+                // Utilisateur connecté : son ID
+                // Visiteur : NULL
+                'user_id' => $user?->id,
+
+                // Utilisateur connecté : NULL
+                // Visiteur : son token
+                'voter_token' => $user
+                    ? null
+                    : $voterToken,
             ]);
         });
     }
 
-    private function ensurePollCanReceiveVote(Poll $poll): void
-    {
+    /**
+     * Vérifie que le sondage est encore ouvert.
+     */
+    private function ensurePollCanReceiveVote(
+        Poll $poll
+    ): void {
         if ($poll->status !== 'active') {
             throw new RuntimeException(
                 'Ce sondage n\'accepte pas actuellement de votes.'
             );
         }
 
-        if($poll->expires_at && $poll->expires_at ->isPast()) {
+        if (
+            $poll->expires_at
+            && $poll->expires_at->isPast()
+        ) {
             throw new RuntimeException(
                 'Ce sondage a expiré.'
             );
         }
     }
 
+    /**
+     * Vérifie que l'option appartient au sondage.
+     */
     private function ensureOptionBelongsToPoll(
         Poll $poll,
         int $pollOptionId
@@ -55,14 +97,36 @@ class VoteService
             );
         }
     }
- 
-    private function ensureUserHasNotVoted(
-        User $user,
-        Poll $poll
+
+    /**
+     * Vérifie que le votant n'a pas déjà voté.
+     *
+     * Utilisateur connecté :
+     * recherche par user_id.
+     *
+     * Visiteur :
+     * recherche par voter_token.
+     */
+    private function ensureVoterHasNotVoted(
+        ?User $user,
+        Poll $poll,
+        string $voterToken
     ): void {
-        $alreadyVoted = $poll->votes()
-            ->where('user_id', $user->id)
-            ->exists();
+
+        if ($user) {
+
+            // Utilisateur connecté
+            $alreadyVoted = $poll->votes()
+                ->where('user_id', $user->id)
+                ->exists();
+
+        } else {
+
+            // Visiteur
+            $alreadyVoted = $poll->votes()
+                ->where('voter_token', $voterToken)
+                ->exists();
+        }
 
         if ($alreadyVoted) {
             throw new RuntimeException(

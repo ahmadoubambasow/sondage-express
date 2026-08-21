@@ -8,11 +8,11 @@ use Illuminate\Foundation\Http\FormRequest;
 class StoreVoteRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Tout visiteur peut voter.
      */
     public function authorize(): bool
     {
-        return auth()->check();
+        return true;
     }
 
     /**
@@ -38,6 +38,9 @@ class StoreVoteRequest extends FormRequest
                 'Veuillez sélectionner une option.',
 
             'poll_option_id.exists' =>
+                'L’option sélectionnée est invalide.',
+            
+            'poll_option_id.integer' =>
                 'L’option sélectionnée est invalide.',
         ];
     }
