@@ -84,6 +84,57 @@
 
                     </div>
 
+                    {{-- Partage du sondage --}}
+<div class="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+
+    <h2 class="font-semibold text-gray-900">
+        Partager ce sondage
+    </h2>
+
+    <p class="mt-1 text-sm text-gray-600">
+        Partagez ce lien pour permettre aux autres de participer.
+    </p>
+
+    <div class="mt-4 flex flex-col sm:flex-row gap-3">
+
+        {{-- URL du sondage --}}
+        <input
+            id="poll-share-url"
+            type="text"
+            readonly
+            value="{{ route('polls.show', $poll) }}"
+            class="flex-1 rounded-md border-gray-300 bg-white text-sm text-gray-700 focus:border-indigo-500 focus:ring-indigo-500"
+        >
+
+        {{-- Copier --}}
+        <button
+            type="button"
+            onclick="copyPollLink()"
+            class="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700"
+        >
+            Copier le lien
+        </button>
+
+        {{-- Partager --}}
+        <button
+            type="button"
+            onclick="sharePoll()"
+            class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+        >
+            Partager
+        </button>
+
+    </div>
+
+    {{-- Message de confirmation --}}
+    <p
+        id="copy-success"
+        class="hidden mt-2 text-sm text-green-600"
+    >
+        ✓ Lien copié !
+    </p>
+
+</div>
 
                     {{-- ================================================= --}}
                     {{-- VOTE                                               --}}
@@ -329,3 +380,81 @@
     </div>
 
 </x-app-layout>
+
+<script>
+    function getPollUrl() {
+        return document.getElementById('poll-share-url').value;
+    }
+
+    async function copyPollLink() {
+        const url = getPollUrl();
+
+        try {
+            await navigator.clipboard.writeText(url);
+
+            const message = document.getElementById('copy-success');
+
+            message.classList.remove('hidden');
+
+            setTimeout(() => {
+                message.classList.add('hidden');
+            }, 2000);
+
+        } catch (error) {
+
+            // Fallback pour les navigateurs qui ne supportent
+            // pas navigator.clipboard
+            const input = document.getElementById('poll-share-url');
+
+            input.select();
+            input.setSelectionRange(0, 99999);
+
+            document.execCommand('copy');
+
+            const message = document.getElementById('copy-success');
+
+            message.classList.remove('hidden');
+
+            setTimeout(() => {
+                message.classList.add('hidden');
+            }, 2000);
+        }
+    }
+
+
+    async function sharePoll() {
+
+        const url = getPollUrl();
+
+        const title = @json($poll->title);
+
+        /*
+         * Utilise le menu natif de partage du téléphone
+         * lorsque le navigateur le supporte.
+         */
+        if (navigator.share) {
+
+            try {
+
+                await navigator.share({
+                    title: title,
+                    text: 'Participez à ce sondage : ' + title,
+                    url: url
+                });
+
+            } catch (error) {
+
+                // L'utilisateur a simplement annulé le partage.
+                if (error.name !== 'AbortError') {
+                    console.error(error);
+                }
+            }
+
+        } else {
+
+            // Si le navigateur ne supporte pas Web Share,
+            // on copie simplement le lien.
+            await copyPollLink();
+        }
+    }
+</script>
