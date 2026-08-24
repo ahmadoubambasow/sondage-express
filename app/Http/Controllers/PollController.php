@@ -117,7 +117,7 @@ class PollController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    public function edit(Poll $poll): View
+    public function edit(Poll $poll): View|RedirectResponse
     {
         abort_unless(
             auth()->check()

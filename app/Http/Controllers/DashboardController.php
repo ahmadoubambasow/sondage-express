@@ -2,13 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
         $user = auth()->user();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Statistiques
+        |--------------------------------------------------------------------------
+        */
 
         $pollsCount = $user->polls()->count();
 
@@ -25,18 +32,40 @@ class DashboardController extends Controller
             ->get()
             ->sum('votes_count');
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Recherche
+        |--------------------------------------------------------------------------
+        */
+
+        $search = trim($request->input('search', ''));
+
         $recentPolls = $user->polls()
+            ->withCount('votes')
+            ->when($search !== '', function ($query) use ($search) {
+
+                $query->where('title', 'like', '%' . $search . '%');
+
+            })
             ->latest()
             ->take(5)
             ->get();
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Vue
+        |--------------------------------------------------------------------------
+        */
 
         return view('dashboard', [
             'pollsCount' => $pollsCount,
             'activePollsCount' => $activePollsCount,
             'closedPollsCount' => $closedPollsCount,
             'votesCount' => $votesCount,
-            'recentPolls' => $recentPolls
+            'recentPolls' => $recentPolls,
+            'search' => $search,
         ]);
     }
 }

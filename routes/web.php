@@ -16,27 +16,6 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-/*
-|--------------------------------------------------------------------------
-| Sondages publics
-|--------------------------------------------------------------------------
-|
-| Un utilisateur peut :
-| - consulter un sondage ;
-| - voter sans compte ;
-| - consulter les résultats.
-|
-*/
-
-Route::get('/polls/{poll:slug}', [PollController::class, 'show'])
-    ->name('polls.show');
-
-Route::post('/polls/{poll:slug}/vote', [PollController::class, 'vote'])
-    ->name('polls.vote');
-
-Route::get('/polls/{poll:slug}/results', [PollController::class, 'results'])
-    ->name('polls.results');
-
 
 /*
 |--------------------------------------------------------------------------
@@ -97,6 +76,27 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])
         ->name('profile.destroy');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Sondages publics
+|--------------------------------------------------------------------------
+|
+| Un utilisateur peut :
+| - consulter un sondage ;
+| - voter sans compte ;
+| - consulter les résultats.
+|
+*/
+
+Route::get('/polls/{poll:slug}', [PollController::class, 'show'])
+    ->name('polls.show');
+
+Route::post('/polls/{poll:slug}/vote', [PollController::class, 'vote'])
+    ->name('polls.vote');
+
+Route::get('/polls/{poll:slug}/results', [PollController::class, 'results'])
+    ->name('polls.results');
 
 
 require __DIR__.'/auth.php';
