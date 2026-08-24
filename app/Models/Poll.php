@@ -18,11 +18,13 @@ class Poll extends Model
         'description',
         'slug',
         'status',
+        'allow_multiple_choices',
         'expires_at',
     ];
 
     protected $casts = [
         'expires_at' => 'datetime',
+        'allow_multiple_choices' => 'boolean',
     ];
 
     public function user(): BelongsTo

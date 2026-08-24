@@ -56,6 +56,11 @@ class StorePollRequest extends FormRequest
                 Rule::in(['draft', 'active']),
             ],
 
+            'allow_multiple_choices' => [
+                'nullable',
+                'boolean',
+            ],
+
             'expires_at' => [
                 'nullable',
                 'date',

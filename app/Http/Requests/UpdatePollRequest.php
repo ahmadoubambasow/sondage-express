@@ -56,6 +56,11 @@ class UpdatePollRequest extends FormRequest
                 Rule::in(['draft', 'active', 'closed']),
             ],
 
+            'allow_multiple_choices' => [
+                'nullable',
+                'boolean',
+            ],
+
             'expires_at' => [
                 'nullable',
                 'date',

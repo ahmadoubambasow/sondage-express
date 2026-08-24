@@ -20,6 +20,7 @@ class PollService
                 'description' => $data['description'] ?? null,
                 'slug' => $this->generateUniqueSlug($data['title']),
                 'status' => $data['status'],
+                'allow_multiple_choices' => $data['allow_multiple_choices'] ?? false,
                 'expires_at' => $data['expires_at'] ?? null,
             ]);
 

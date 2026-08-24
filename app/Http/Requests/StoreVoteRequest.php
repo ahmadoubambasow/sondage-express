@@ -16,14 +16,18 @@ class StoreVoteRequest extends FormRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
+     * Règles de validation.
      */
     public function rules(): array
     {
         return [
-            'poll_option_id' => [
+            'poll_option_ids' => [
+                'required',
+                'array',
+                'min:1',
+            ],
+
+            'poll_option_ids.*' => [
                 'required',
                 'integer',
                 'exists:poll_options,id',
@@ -31,17 +35,29 @@ class StoreVoteRequest extends FormRequest
         ];
     }
 
+    /**
+     * Messages personnalisés.
+     */
     public function messages(): array
     {
         return [
-            'poll_option_id.required' =>
-                'Veuillez sélectionner une option.',
+            'poll_option_ids.required' =>
+                'Veuillez sélectionner au moins une option.',
 
-            'poll_option_id.exists' =>
-                'L’option sélectionnée est invalide.',
-            
-            'poll_option_id.integer' =>
-                'L’option sélectionnée est invalide.',
+            'poll_option_ids.array' =>
+                'Les options sélectionnées sont invalides.',
+
+            'poll_option_ids.min' =>
+                'Veuillez sélectionner au moins une option.',
+
+            'poll_option_ids.*.required' =>
+                'Une option est invalide.',
+
+            'poll_option_ids.*.integer' =>
+                'Une option sélectionnée est invalide.',
+
+            'poll_option_ids.*.exists' =>
+                'Une option sélectionnée est invalide.',
         ];
     }
 }

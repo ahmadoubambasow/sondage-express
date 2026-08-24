@@ -87,6 +87,30 @@
 
                         </div>
 
+                        <div class="mt-6">
+
+                            <label class="flex items-center gap-3">
+
+                                <input
+                                    type="checkbox"
+                                    name="allow_multiple_choices"
+                                    value="1"
+                                    class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                    {{ old('allow_multiple_choices') ? 'checked' : '' }}
+                                >
+
+                                <span class="text-sm text-gray-700">
+                                    Autoriser plusieurs choix
+                                </span>
+
+                            </label>
+
+                            <p class="mt-1 ml-6 text-sm text-gray-500">
+                                Les participants pourront sélectionner plusieurs options.
+                            </p>
+
+                        </div>
+
                         {{-- Options --}}
                         <div class="mb-6">
 

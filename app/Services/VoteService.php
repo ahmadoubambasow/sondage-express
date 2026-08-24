@@ -10,51 +10,91 @@ use RuntimeException;
 class VoteService
 {
     /**
-     * Enregistre un vote.
+     * Enregistre ou modifie le vote.
      *
      * Le vote peut provenir :
      * - d'un utilisateur connecté ;
      * - d'un visiteur identifié par un voter_token.
+     *
+     * Un participant peut modifier son vote tant que
+     * le sondage est encore ouvert.
      */
     public function vote(
         ?User $user,
         Poll $poll,
-        int $pollOptionId,
+        array $pollOptionIds,
         string $voterToken
     ): void {
         DB::transaction(function () use (
             $user,
             $poll,
-            $pollOptionId,
+            $pollOptionIds,
             $voterToken
         ) {
 
             $this->ensurePollCanReceiveVote($poll);
 
-            $this->ensureOptionBelongsToPoll(
-                $poll,
-                $pollOptionId
+            $pollOptionIds = array_values(
+                array_unique(
+                    array_map('intval', $pollOptionIds)
+                )
             );
 
-            $this->ensureVoterHasNotVoted(
+            if (empty($pollOptionIds)) {
+                throw new RuntimeException(
+                    'Vous devez sélectionner au moins une option.'
+                );
+            }
+
+            /*
+             * Vérifie si le sondage autorise plusieurs choix.
+             */
+            if (
+                !$poll->allow_multiple_choices
+                && count($pollOptionIds) > 1
+            ) {
+                throw new RuntimeException(
+                    'Ce sondage n’autorise qu’un seul choix.'
+                );
+            }
+
+            /*
+             * Vérifie que toutes les options appartiennent
+             * bien au sondage.
+             */
+            foreach ($pollOptionIds as $pollOptionId) {
+                $this->ensureOptionBelongsToPoll(
+                    $poll,
+                    $pollOptionId
+                );
+            }
+
+            /*
+             * Supprime les anciens votes du participant.
+             *
+             * Cela permet de modifier son vote.
+             */
+            $this->deletePreviousVotes(
                 $user,
                 $poll,
                 $voterToken
             );
 
-            $poll->votes()->create([
-                'poll_option_id' => $pollOptionId,
+            /*
+             * Enregistre les nouveaux choix.
+             */
+            foreach ($pollOptionIds as $pollOptionId) {
 
-                // Utilisateur connecté : son ID
-                // Visiteur : NULL
-                'user_id' => $user?->id,
+                $poll->votes()->create([
+                    'poll_option_id' => $pollOptionId,
 
-                // Utilisateur connecté : NULL
-                // Visiteur : son token
-                'voter_token' => $user
-                    ? null
-                    : $voterToken,
-            ]);
+                    'user_id' => $user?->id,
+
+                    'voter_token' => $user
+                        ? null
+                        : $voterToken,
+                ]);
+            }
         });
     }
 
@@ -99,7 +139,7 @@ class VoteService
     }
 
     /**
-     * Vérifie que le votant n'a pas déjà voté.
+     * Supprime les votes précédents du participant.
      *
      * Utilisateur connecté :
      * recherche par user_id.
@@ -107,7 +147,7 @@ class VoteService
      * Visiteur :
      * recherche par voter_token.
      */
-    private function ensureVoterHasNotVoted(
+    private function deletePreviousVotes(
         ?User $user,
         Poll $poll,
         string $voterToken
@@ -115,23 +155,15 @@ class VoteService
 
         if ($user) {
 
-            // Utilisateur connecté
-            $alreadyVoted = $poll->votes()
+            $poll->votes()
                 ->where('user_id', $user->id)
-                ->exists();
+                ->delete();
 
         } else {
 
-            // Visiteur
-            $alreadyVoted = $poll->votes()
+            $poll->votes()
                 ->where('voter_token', $voterToken)
-                ->exists();
-        }
-
-        if ($alreadyVoted) {
-            throw new RuntimeException(
-                'Vous avez déjà participé à ce sondage.'
-            );
+                ->delete();
         }
     }
 }
