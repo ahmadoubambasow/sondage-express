@@ -11,9 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('votes', function (Blueprint $table) {
-            $table->dropUnique('votes_poll_user_unique');
-        });
+        //
     }
 
     /**
@@ -21,11 +19,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('votes', function (Blueprint $table) {
-            $table->unique(
-                ['poll_id', 'user_id'],
-                'votes_poll_user_unique'
-            );
-        });
+        //
     }
 };

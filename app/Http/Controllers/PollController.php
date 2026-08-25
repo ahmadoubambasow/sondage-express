@@ -62,30 +62,45 @@ class PollController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Vérifier si le votant a déjà voté
+        | Récupérer les votes du participant
         |--------------------------------------------------------------------------
         */
+
+        $userVoteOptionIds = [];
 
         if (auth()->check()) {
 
             // Utilisateur connecté
-            $hasVoted = $poll->votes()
+            $userVoteOptionIds = $poll->votes()
                 ->where('user_id', auth()->id())
-                ->exists();
+                ->pluck('poll_option_id')
+                ->toArray();
 
         } else {
 
             // Visiteur
             $voterToken = session()->get('voter_token');
 
-            $hasVoted = $voterToken
-                ? $poll->votes()
+            if ($voterToken) {
+
+                $userVoteOptionIds = $poll->votes()
                     ->where('voter_token', $voterToken)
-                    ->exists()
-                : false;
+                    ->pluck('poll_option_id')
+                    ->toArray();
+            }
+
+            
         }
 
         /*
+        |--------------------------------------------------------------------------
+        | Vérifier si le participant a déjà voté
+        |--------------------------------------------------------------------------
+        */
+
+        $hasVoted = !empty($userVoteOptionIds);
+
+         /*
         |--------------------------------------------------------------------------
         | Informations du sondage
         |--------------------------------------------------------------------------
@@ -105,6 +120,7 @@ class PollController extends Controller
         return view('polls.show', [
             'poll' => $poll,
             'hasVoted' => $hasVoted,
+            'userVoteOptionIds' => $userVoteOptionIds,
             'hasVotes' => $hasVotes,
             'isOwner' => $isOwner,
             'isOpen' => $isOpen,
@@ -220,7 +236,7 @@ class PollController extends Controller
             $this->voteService->vote(
                 $user,
                 $poll,
-                (int) $request->validated('poll_option_id'),
+                $request->validated('poll_option_ids'),
                 $voterToken
             );
 
@@ -237,9 +253,9 @@ class PollController extends Controller
             ->route('polls.show', $poll)
             ->with(
                 'success',
-                'Votre vote a été enregistré.'
+                'Votre vote a été enregistré avec succès.'
             );
-    }
+    } 
 
     /*
     |--------------------------------------------------------------------------

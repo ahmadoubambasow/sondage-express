@@ -202,7 +202,24 @@
                                     />
                                 </svg>
 
-                                {{ $poll->votes()->count() }} vote{{ $poll->votes()->count() > 1 ? 's' : '' }}
+                                {{ $poll->votes()->count() }}
+                                vote{{ $poll->votes()->count() > 1 ? 's' : '' }}
+
+                            </span>
+
+
+                            {{-- Type de vote --}}
+                            <span class="inline-flex items-center gap-1.5">
+
+                                @if ($poll->allow_multiple_choices)
+
+                                    ✓ Plusieurs choix
+
+                                @else
+
+                                    ✓ Un seul choix
+
+                                @endif
 
                             </span>
 
@@ -295,32 +312,40 @@
                                        focus:ring-gray-400"
                             >
 
-
                             <button
                                 type="button"
                                 onclick="copyPollLink()"
-                                class="inline-flex items-center justify-center
-                                       rounded-lg bg-gray-900 px-4 py-2.5
-                                       text-sm font-medium text-white
-                                       transition hover:bg-gray-800"
+                                class="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700"
                             >
                                 Copier
                             </button>
 
-
                             <button
                                 type="button"
                                 onclick="sharePoll()"
-                                class="inline-flex items-center justify-center
-                                       rounded-lg bg-indigo-600 px-4 py-2.5
-                                       text-sm font-medium text-white
-                                       transition hover:bg-indigo-700"
+                                style="
+                                    display: inline-flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    padding: 10px 16px;
+                                    background-color: #4f46e5 !important;
+                                    color: #ffffff !important;
+                                    border: none !important;
+                                    border-radius: 8px;
+                                    font-size: 14px;
+                                    font-weight: 600;
+                                    line-height: 20px;
+                                    opacity: 1 !important;
+                                    visibility: visible !important;
+                                    cursor: pointer;
+                                "
+                                onmouseover="this.style.backgroundColor='#4338ca'"
+                                onmouseout="this.style.backgroundColor='#4f46e5'"
                             >
                                 Partager
                             </button>
 
                         </div>
-
 
                         <p
                             id="copy-success"
@@ -339,17 +364,71 @@
 
                     <div class="mt-8">
 
-                        @if ($isOpen && !$hasVoted)
+                        @if ($isOpen)
+
+                            {{-- Message si déjà voté --}}
+                            @if ($hasVoted)
+
+                                <div class="mb-5 rounded-xl border
+                                            border-blue-200 bg-blue-50 p-4
+                                            text-blue-800">
+
+                                    <div class="flex items-start gap-3">
+
+                                        <span
+                                            class="flex h-8 w-8 shrink-0
+                                                   items-center justify-center
+                                                   rounded-full bg-blue-100
+                                                   text-blue-600 font-semibold"
+                                        >
+                                            ✓
+                                        </span>
+
+                                        <div>
+
+                                            <p class="text-sm font-semibold">
+                                                Vous avez déjà voté.
+                                            </p>
+
+                                            <p class="mt-1 text-sm text-blue-700">
+                                                Vous pouvez modifier votre choix
+                                                tant que ce sondage reste ouvert.
+                                            </p>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            @endif
+
 
                             <div class="mb-4">
 
                                 <h2 class="font-semibold text-gray-900">
-                                    Choisissez une option
+
+                                    @if ($hasVoted)
+                                        Modifier votre vote
+                                    @else
+                                        Choisissez une option
+                                    @endif
+
                                 </h2>
 
                                 <p class="mt-1 text-sm text-gray-500">
-                                    Sélectionnez votre réponse puis validez
-                                    votre vote.
+
+                                    @if ($poll->allow_multiple_choices)
+
+                                        Vous pouvez sélectionner plusieurs
+                                        options.
+
+                                    @else
+
+                                        Sélectionnez une seule option.
+
+                                    @endif
+
                                 </p>
 
                             </div>
@@ -362,6 +441,7 @@
 
                                 @csrf
 
+
                                 <div class="space-y-3">
 
                                     @foreach ($poll->options as $option)
@@ -370,15 +450,19 @@
                                             class="flex cursor-pointer items-center
                                                    gap-3 rounded-xl border
                                                    border-gray-200 p-4
-                                                   transition hover:border-gray-300
-                                                   hover:bg-gray-50"
+                                                   transition
+                                                   hover:border-indigo-300
+                                                   hover:bg-indigo-50"
                                         >
 
                                             <input
-                                                type="radio"
-                                                name="poll_option_id"
+                                                type="{{ $poll->allow_multiple_choices ? 'checkbox' : 'radio' }}"
+                                                name="poll_option_ids[]"
                                                 value="{{ $option->id }}"
-                                                required
+                                                @checked(in_array(
+                                                    $option->id,
+                                                    $userVoteOptionIds
+                                                ))
                                                 class="h-4 w-4 border-gray-300
                                                        text-indigo-600
                                                        focus:ring-indigo-500"
@@ -395,7 +479,16 @@
                                 </div>
 
 
-                                @error('poll_option_id')
+                                @error('poll_option_ids')
+
+                                    <p class="mt-2 text-sm text-red-600">
+                                        {{ $message }}
+                                    </p>
+
+                                @enderror
+
+
+                                @error('poll_option_ids.*')
 
                                     <p class="mt-2 text-sm text-red-600">
                                         {{ $message }}
@@ -408,13 +501,15 @@
 
                                     <button
                                         type="submit"
-                                        class="inline-flex items-center
-                                               justify-center rounded-lg
-                                               bg-gray-900 px-5 py-2.5
-                                               text-sm font-semibold text-white
-                                               transition hover:bg-gray-800"
+                                        class="px-5 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700"
                                     >
-                                        Voter
+
+                                        @if ($hasVoted)
+                                            Modifier mon vote
+                                        @else
+                                            Voter
+                                        @endif
+
                                     </button>
 
 
@@ -435,43 +530,11 @@
                             </form>
 
 
-                        @elseif ($hasVoted)
-
-                            <div class="rounded-xl border border-green-200
-                                        bg-green-50 p-4 text-green-800">
-
-                                <div class="flex items-center gap-3">
-
-                                    <span
-                                        class="flex h-8 w-8 items-center
-                                               justify-center rounded-full
-                                               bg-green-100 text-green-600"
-                                    >
-                                        ✓
-                                    </span>
-
-                                    <p class="text-sm font-medium">
-                                        Vous avez déjà voté pour ce sondage.
-                                    </p>
-
-                                </div>
-
-                            </div>
-
-
-                            <a
-                                href="{{ route('polls.results', $poll) }}"
-                                class="mt-4 inline-flex items-center
-                                       justify-center rounded-lg
-                                       bg-gray-900 px-5 py-2.5 text-sm
-                                       font-semibold text-white
-                                       transition hover:bg-gray-800"
-                            >
-                                Voir les résultats
-                            </a>
-
-
                         @else
+
+                            {{-- =================================================
+                                 SONDAGE FERMÉ / EXPIRÉ
+                            ================================================== --}}
 
                             <div class="rounded-xl border border-gray-200
                                         bg-gray-50 p-4 text-gray-600">
@@ -481,8 +544,10 @@
                                     Ce sondage est fermé et n'accepte plus
                                     de votes.
 
-                                @elseif ($poll->expires_at &&
-                                        $poll->expires_at->isPast())
+                                @elseif (
+                                    $poll->expires_at &&
+                                    $poll->expires_at->isPast()
+                                )
 
                                     Ce sondage a expiré et n'accepte plus
                                     de votes.
@@ -532,21 +597,7 @@
 
                                     <a
                                         href="{{ route('polls.edit', $poll) }}"
-                                        style="
-                                            display: inline-flex;
-                                            align-items: center;
-                                            justify-content: center;
-                                            padding: 10px 16px;
-                                            background-color: #d97706;
-                                            color: #ffffff;
-                                            border-radius: 8px;
-                                            font-size: 14px;
-                                            font-weight: 600;
-                                            text-decoration: none;
-                                            cursor: pointer;
-                                        "
-                                        onmouseover="this.style.backgroundColor='#b45309'"
-                                        onmouseout="this.style.backgroundColor='#d97706'"
+                                        class="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700"
                                     >
                                         Modifier
                                     </a>
@@ -561,7 +612,6 @@
                                     style="display: inline-block; margin: 0;"
                                     onsubmit="return confirm('Voulez-vous vraiment fermer ce sondage ?')"
                                 >
-
                                     @csrf
                                     @method('PATCH')
 
@@ -572,20 +622,23 @@
                                             align-items: center;
                                             justify-content: center;
                                             padding: 10px 16px;
-                                            background-color: #ea580c;
-                                            color: #ffffff;
-                                            border: none;
+                                            background: #d97706 !important;
+                                            color: #ffffff !important;
+                                            border: 0 !important;
                                             border-radius: 8px;
                                             font-size: 14px;
                                             font-weight: 600;
+                                            line-height: 20px;
+                                            opacity: 1 !important;
+                                            visibility: visible !important;
                                             cursor: pointer;
+                                            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
                                         "
-                                        onmouseover="this.style.backgroundColor='#c2410c'"
-                                        onmouseout="this.style.backgroundColor='#ea580c'"
                                     >
-                                        Fermer le sondage
+                                        <span style="color: #ffffff !important;">
+                                            Fermer le sondage
+                                        </span>
                                     </button>
-
                                 </form>
 
 
@@ -595,7 +648,7 @@
                                     <form
                                         method="POST"
                                         action="{{ route('polls.destroy', $poll) }}"
-                                        style="display: inline-block; margin: 0;"
+                                        class="inline-block"
                                         onsubmit="return confirm('Voulez-vous vraiment supprimer ce sondage ?')"
                                     >
 
@@ -604,21 +657,7 @@
 
                                         <button
                                             type="submit"
-                                            style="
-                                                display: inline-flex;
-                                                align-items: center;
-                                                justify-content: center;
-                                                padding: 10px 16px;
-                                                background-color: #dc2626;
-                                                color: #ffffff;
-                                                border: none;
-                                                border-radius: 8px;
-                                                font-size: 14px;
-                                                font-weight: 600;
-                                                cursor: pointer;
-                                            "
-                                            onmouseover="this.style.backgroundColor='#b91c1c'"
-                                            onmouseout="this.style.backgroundColor='#dc2626'"
+                                            class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
                                         >
                                             Supprimer
                                         </button>
@@ -645,8 +684,12 @@
 
 
 <script>
+
     function getPollUrl() {
-        return document.getElementById('poll-share-url').value;
+
+        return document
+            .getElementById('poll-share-url')
+            .value;
     }
 
 
@@ -661,7 +704,8 @@
 
         } catch (error) {
 
-            const input = document.getElementById('poll-share-url');
+            const input =
+                document.getElementById('poll-share-url');
 
             input.select();
             input.setSelectionRange(0, 99999);
@@ -672,7 +716,9 @@
         message.classList.remove('hidden');
 
         setTimeout(() => {
+
             message.classList.add('hidden');
+
         }, 2000);
     }
 
@@ -706,4 +752,5 @@
 
         }
     }
+
 </script>
