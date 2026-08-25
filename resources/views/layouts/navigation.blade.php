@@ -20,9 +20,21 @@
                         <a href="{{ url('/') }}">
                     @endauth
 
-                        <x-application-logo
-                            class="block h-9 w-auto fill-current text-gray-800"
-                        />
+                        <a href="{{ url('/') }}" class="flex items-center gap-2">
+    
+                            <div
+                                class="flex h-9 w-9 items-center justify-center
+                                    rounded-lg bg-indigo-600
+                                    text-white font-bold"
+                            >
+                                S
+                            </div>
+
+                            <span class="text-xl font-bold text-gray-900">
+                                Sondage<span class="text-indigo-600">Express</span>
+                            </span>
+
+                        </a>
 
                     </a>
 
@@ -94,7 +106,7 @@
 
                             {{-- Profil --}}
                             <x-dropdown-link :href="route('profile.edit')">
-                                {{ __('Profile') }}
+                                {{ __('Profil') }}
                             </x-dropdown-link>
 
 
@@ -110,7 +122,7 @@
                                     :href="route('logout')"
                                     onclick="event.preventDefault(); this.closest('form').submit();"
                                 >
-                                    {{ __('Log Out') }}
+                                    {{ __('Déconnexion') }}
                                 </x-dropdown-link>
 
                             </form>
